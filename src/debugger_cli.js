@@ -36,6 +36,11 @@ function CLIHandler(inputElement, logElement = null, cli = null, logs = []) {
         if (command === 'clear') {
             this.clearLog();
             return;
+        } else if(command === 'help'){
+            for(let cmd of Debugger._commandsMap.keys()){
+                this.log(cmd);
+            }
+            return;
         }
         let args = command.split(" ");
         console.log(`processing "${command}"`);
