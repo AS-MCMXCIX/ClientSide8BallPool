@@ -368,6 +368,31 @@ class LinkedList {
     }
 }
 
+class PaperAnimation {
+    constructor(type, duration, node) {
+        this.type = type;
+        this.node = node;
+        this._curr = 0;
+        this.duration = duration;
+    }
+    progress() {
+    }
+
+    onFinish() {
+    }
+    extend(args) {
+        let res = Object.create(this);
+        for (let field in args) {
+            res[field] = args[field];
+        }
+        return res;
+    }
+};
+MyAnimation = new PaperAnimation('that', null, null);
+MyAnimation.myImpl = function () {
+    return 'myImpl';
+};
+console.log(MyAnimation.myImpl());
 /*
 let l = new LinkedList();
 l.add(0);

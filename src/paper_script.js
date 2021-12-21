@@ -137,14 +137,13 @@ class StickPowerIndicator {
     }
 
     createAnimation() {
-        let deltaM = 0.01;
         if (this.hasActiveAnimation)
             return null;
         this.hasActiveAnimation = true;
         let indicator = this;
         return {
             remove: false,
-            deltaM: deltaM,
+            deltaM: 0.01,
             reset: function () {
                 indicator.m = 0;
                 this.remove = false;
@@ -289,28 +288,23 @@ class Table {
         let sup = this;
         ball.msVector = 0;
         this.events.add(['pocket', ball.number]);
-        animationRequests.add({
-            type: 'transcale',
-            node: ball.shape,
-            des: pocket,
-            duration: l,
-            curr: 0,
-            progress: function () {
-                let c = (this.duration - this.curr) / this.duration;
-                this.node.position = this.node.position + (this.des - this.node.position) * (1 - c);
-                this.node.scale(c);
-                ++this.curr;
-                if (this.curr > this.duration) {
-                    this.node = null;
-                    return true;
-                }
-                return false;
-            },
-            onFinish: function () {
-                ball.shape.remove();
-                --sup.ballsEnteringPocket;
+        let animation = new PaperAnimation('transcale', l, ball.shape);
+        animation.progress = function () {
+            let c = (this.duration - this._curr) / this.duration;
+            this.node.position = this.node.position + (pocket - this.node.position) * (1 - c);
+            this.node.scale(c);
+            ++this._curr;
+            if (this._curr > this.duration) {
+                this.node = null;
+                return true;
             }
-        });
+            return false;
+        };
+        animation.onFinish = function () {
+            ball.shape.remove();
+            --sup.ballsEnteringPocket;
+        };
+        animationRequests.add(animation);
         return true;
     }
 
@@ -402,34 +396,29 @@ class Table {
                     let dy = cueBall.y - this.stick.shape.position.y;
                     let d2 = (dx * dx + dy * dy) ** 0.5;
                     let sup = this;
-                    let l = 40;
                     this.ballInHand = false;
                     this.stick.draggable = false;
-                    animationRequests.add({
-                        type: 'translate',
-                        node: sup.stick.shape,
-                        delta: (cueBall.shape.position - sup.stick.shape.position) * 0.05 * sup.stickPowerIndicator.m,
-                        duration: l,
-                        curr: 0,
-                        progress: function () {
-                            let c = (this.curr) / this.duration;
-                            let sgn = c < 0.5 ? 1 : -2;
-                            this.node.position = this.node.position - this.delta * sgn;
-                            this.curr += c < 0.5 ? 1.5 * GLOBAL_TIME_MULTIPLIER : 3 * GLOBAL_TIME_MULTIPLIER;
-                            if (this.curr > this.duration) {
-                                this.node = null;
-                                return true;
-                            }
-                            return false;
-                        },
-                        onFinish: function () {
-                            ballHitAudio.play();
-                            sup.physicsHandler.injectMS(sup.balls.length - 1, new Point({
-                                angle: getAngle(dy, dx),
-                                length: sup.stickPowerIndicator.m * 30 * tableWidth / 890
-                            }));
+                    let animation = new PaperAnimation('translate', 40, this.stick.shape);
+                    let delta = (cueBall.shape.position - this.stick.shape.position) * 0.05 * this.stickPowerIndicator.m;
+                    animation.progress = function () {
+                        let c = (this._curr) / this.duration;
+                        let sgn = c < 0.5 ? 1 : -2;
+                        this.node.position = this.node.position - delta * sgn;
+                        this._curr += c < 0.5 ? 1.5 * GLOBAL_TIME_MULTIPLIER : 3 * GLOBAL_TIME_MULTIPLIER;
+                        if (this._curr > this.duration) {
+                            this.node = null;
+                            return true;
                         }
-                    });
+                        return false;
+                    };
+                    animation.onFinish = function () {
+                        ballHitAudio.play();
+                        sup.physicsHandler.injectMS(sup.balls.length - 1, new Point({
+                            angle: getAngle(dy, dx),
+                            length: sup.stickPowerIndicator.m * 30 * tableWidth / 890
+                        }));
+                    };
+                    animationRequests.add(animation);
                 }
             }
         };
