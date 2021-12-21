@@ -375,11 +375,13 @@ class PaperAnimation {
         this._curr = 0;
         this.duration = duration;
     }
+
     progress() {
     }
 
     onFinish() {
     }
+
     extend(args) {
         let res = Object.create(this);
         for (let field in args) {
@@ -387,24 +389,4 @@ class PaperAnimation {
         }
         return res;
     }
-};
-MyAnimation = new PaperAnimation('that', null, null);
-MyAnimation.myImpl = function () {
-    return 'myImpl';
-};
-console.log(MyAnimation.myImpl());
-/*
-let l = new LinkedList();
-l.add(0);
-let it = l.iterator();
-it.next();
-for (let i = 1; i < 10; i++) {
-    it.add(i);
 }
-console.log(l.toString());
-console.log("reverse be " + l.toStringReverse());
-it.remove();
-it.next();
-it.next();
-it.remove();
-*/
