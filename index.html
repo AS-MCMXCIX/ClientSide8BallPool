@@ -86,13 +86,14 @@
     </style>
     <meta charset="UTF-8">
     <title>Login</title>
-    <link href="lib/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/bootstrap.css" rel="stylesheet">
+
 </head>
 <body class="bg-info">
 
 <form class="position-absolute d-flex flex-column justify-content-around w-25"
       style="background-color: maroon  ;left: 37.5%; top: 5%;height: 90%">
-    <div class="form-row mb-2 mt-3 row-cols-2 row-cols-md-2 justify-content-around overflow-hidden"
+    <div class="row mb-2 mt-3 row-cols-2 row-cols-md-2 justify-content-around overflow-hidden"
          id="selected-avatars">
         <div class="form-group col-md-5">
             <img src="res/avatars/unknown.svg" class="card-img-top" id="p1-avatar" alt="...">
@@ -101,7 +102,7 @@
             <img src="res/avatars/unknown.svg" class="card-img-top" id="p2-avatar" alt="...">
         </div>
     </div>
-    <div class="form-row justify-content-around">
+    <div class="row justify-content-around">
         <div class="form-group col-md-5">
             <input type="text" class="form-control text-light bg-dark border-primary" id="inputName1" maxlength="10"
                    placeholder="Player1 Name">
@@ -111,18 +112,18 @@
                    placeholder="Player2 Name">
         </div>
     </div>
-    <div id="supin-buttons" class="btn-group btn-group-lg btn-group-toggle w-100" data-toggle="buttons"
+    <div id="supin-buttons" class="btn-group btn-group-lg btn-group-toggle bg-transparent mt-3" data-toggle="buttons"
          style="background-color: #343a40">
-        <label class="btn btn-primary rounded-0 w-100">
-            <input type="radio" name="options" checked onchange="setPlayer(1)">Choose
-            Avatar
+        <input type="radio" class="btn-check" name="options" id="radio1" checked onchange="setPlayer(1)" autocomplete="off">
+        <label class="btn btn-primary rounded-0 w-100 me-1" for="radio1">
+            Choose Avatar
         </label>
-        <label class="btn btn-primary rounded-0 w-100">
-            <input type="radio" name="options" onchange="setPlayer(2)">Choose
-            Avatar
+        <input type="radio" class="btn-check" name="options" id="radio2" onchange="setPlayer(2)" autocomplete="off">
+        <label class="btn btn-primary rounded-0 w-100 ms-1" for="radio2">
+            Choose Avatar
         </label>
     </div>
-    <div class="row ml-auto mr-auto row-cols-3 row-cols-md-3 w-100 h-50 overflow-auto bg-success custom-scrollbar"
+    <div class="row row-cols-3 m-0 mt-2 w-100 h-50 overflow-auto bg-success custom-scrollbar"
          id="avatars">
         <!--
         <div class="col mb-4">
@@ -143,9 +144,9 @@
     <button type="submit" class="btn btn-primary" onclick="start();return false;">Start</button>
 </form>
 
-
 <script src="lib/jquery-3.5.1.slim.min.js"></script>
-<script src="lib/bootstrap.bundle.min.js"></script>
+<script src="lib/bootstrap.bundle.js"></script>
+
 
 <script>
     let currPlayer = 1;
