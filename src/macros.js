@@ -8,6 +8,8 @@ const MIN_MOVEMENT_PER_FRAME = 3;
 
 let GLOBAL_TIME_MULTIPLIER = 0.8;
 let DEFAULT_GLOBAL_TIME_MULTIPLIER = 0.8;
+let PREF_GLOBAL_TIME_MULTIPLIER = 0.8;
+let MAX_GTM = 20;
 let DYNAMIC_GTM = true;
 
 const SOLID = 0;
@@ -19,6 +21,8 @@ const CUE_COLLIDE_NO_TARGET_BALL_FIRST = 2;
 const NO_BALL_COLLIDE_RAIL_OR_POCKET = 3;
 const POCKET_CUE = 4;
 const POCKET_NO_BALL_AND_LESS_THAN_4_COLLIDE_RAIL = 5;
+
+const stateStrings =['Awaiting Shot', 'Balls Moving', 'Balls Entering Pocket', 'Analyzing Events'];
 
 const foulsMessages = [
     "Cue Hit No Ball.", "Illegally Pocket 8 Ball.", "Cue Hit Non-Target Ball First.",

@@ -156,6 +156,8 @@ class StickPowerIndicator {
                     this.deltaM = -this.deltaM;
                 indicator.m += this.deltaM;
                 return this.remove;
+            },
+            onFinish: function () {
             }
         };
     }
@@ -173,6 +175,7 @@ class Stick {
         shape.position.x += this.width / 2 + x;
         shape.position.y += this.height / 2 + y;
         this.shape = shape;
+        this.draggable = true;
     }
 
     setRotation(angle) {
@@ -230,11 +233,12 @@ class Table {
         this.analyzedTurnEvents = true;
         this.breakShotDone = false;
         this.stick.shape.visible = false;
+        this.stick.draggable = true;
         this.events.clear();
         this.ballContainers.forEach(bc => bc.clear());
-        this.ballAtHand = false;
+        this.ballInHand = false;
         this.unassignedBalls = [];
-        this.frozen = false;
+        this.freezeRequests = 0;
     }
 
     get currPlayer() {
@@ -259,7 +263,7 @@ class Table {
 
     removeBall(idx, pocket) {
         this.balls[idx].existent = false;
-        this.pocketBall(this.balls[idx], pocket);
+        return this.pocketBall(idx, pocket);
     }
 
     fadeout(g) {
@@ -272,13 +276,18 @@ class Table {
         });
     }
 
-    pocketBall(ball, pocket) {
+    pocketBall(idx, pocket = 0) {
+        if (this.balls.length <= idx || idx < 0)
+            return false;
+        let ball = this.balls[idx];
+        console.log("IN pocketBall");
+        console.log(`\tpocketing ball #${ball.number}`);
         let l = Math.min(60, Math.max(Math.round((ball.shape.position - pocket).length * 3 / ball.msVector.length), 20));
         ++this.ballsEnteringPocket;
         if (ball.number === 0)
             this.removeCueListeners();
         let sup = this;
-        //ball.msVector = null;
+        ball.msVector = 0;
         this.events.add(['pocket', ball.number]);
         animationRequests.add({
             type: 'transcale',
@@ -293,13 +302,16 @@ class Table {
                 ++this.curr;
                 if (this.curr > this.duration) {
                     this.node = null;
-                    ball.shape.remove();
-                    --sup.ballsEnteringPocket;
                     return true;
                 }
                 return false;
+            },
+            onFinish: function () {
+                ball.shape.remove();
+                --sup.ballsEnteringPocket;
             }
         });
+        return true;
     }
 
     get pocketRadius() {
@@ -337,7 +349,6 @@ class Table {
 
         this.physicsHandler = new PhysicsHandler(this, this.muek, this.g);
         let cueBall = this.balls[this.balls.length - 1];
-
         this.phantomCueBall = new Path.Circle(new Point(-100, -100), cueBall.radius);
         this.trackingLine = new Path.Line(new Point(0, 0), new Point(0, 0));
         this.trackingLine.strokeColor = 'white';
@@ -348,7 +359,7 @@ class Table {
         this.phantomCueBall.opacity = 0.5;
         this.stickPowerIndicator = new StickPowerIndicator(100, 200, 20, 300);
 
-        this.ballAtHand = true;
+        this.ballInHand = true;
         this.draggingCue = false;
 
         let mouseMoved;
@@ -357,20 +368,20 @@ class Table {
 
         this.addCueListeners();
         let downListener = () => {
-            if (this.frozen)
+            if (this.isFrozen())
                 return;
             mouseMoved = false;
             mouseDown = true;
-        }
+        };
         let moveListener = e => {
-            if (this.frozen)
+            if (this.isFrozen())
                 return;
             let dx = mouseX - e.pageX;
             let dy = mouseY - e.pageY;
             // if it moved more than a bit
             if (dx * dx + dy * dy > 0.1) {
                 mouseMoved = true;
-                if (!this.draggingCue && mouseDown && this.state === AWAITING_SHOT && cueBall.existent) {
+                if (!this.draggingCue && mouseDown && this.state === AWAITING_SHOT && this.stick.draggable && cueBall.existent) {
                     this.repositionStickBehindCue();
                 }
                 mouseX = e.pageX;
@@ -378,23 +389,47 @@ class Table {
             }
         };
         let upListener = () => {
-            if (this.frozen)
+            if (this.isFrozen())
                 return;
             mouseDown = false;
         };
         let e1 = e => {
-            if (this.frozen)
+            if (this.isFrozen())
                 return;
-            if (e.code === 'Space' && this.physicsHandler.isStatic() && cueBall.existent) {
+            if (e.code === 'Space' && cueBall.existent && this.stick.draggable && this.physicsHandler.isStatic()) {
                 if (!this.stickPowerIndicator.toggleState()) {
                     let dx = cueBall.x - this.stick.shape.position.x;
                     let dy = cueBall.y - this.stick.shape.position.y;
                     let d2 = (dx * dx + dy * dy) ** 0.5;
-                    this.physicsHandler.injectMS(this.balls.length - 1, new Point({
-                        angle: getAngle(dy, dx),
-                        length: this.stickPowerIndicator.m * 30 * tableWidth / 890
-                    }));
-                    this.ballAtHand = false;
+                    let sup = this;
+                    let l = 40;
+                    this.ballInHand = false;
+                    this.stick.draggable = false;
+                    animationRequests.add({
+                        type: 'translate',
+                        node: sup.stick.shape,
+                        delta: (cueBall.shape.position - sup.stick.shape.position) * 0.05 * sup.stickPowerIndicator.m,
+                        duration: l,
+                        curr: 0,
+                        progress: function () {
+                            let c = (this.curr) / this.duration;
+                            let sgn = c < 0.5 ? 1 : -2;
+                            this.node.position = this.node.position - this.delta * sgn;
+                            this.curr += c < 0.5 ? 1.5 * GLOBAL_TIME_MULTIPLIER : 3 * GLOBAL_TIME_MULTIPLIER;
+                            if (this.curr > this.duration) {
+                                this.node = null;
+                                return true;
+                            }
+                            return false;
+                        },
+                        onFinish: function () {
+                            ballHitAudio.play();
+                            sup.physicsHandler.injectMS(sup.balls.length - 1, new Point({
+                                angle: getAngle(dy, dx),
+                                length: sup.stickPowerIndicator.m * 30 * tableWidth / 890
+                            }));
+                        }
+                    });
                 }
             }
         };
@@ -420,6 +455,7 @@ class Table {
 
     pause() {
         appState = 'pause';
+        console.log(`AppState= ${appState}`);
         this.disableStick();
         this.freeze();
     }
@@ -429,22 +465,24 @@ class Table {
         cueBall.shape.onMouseDrag = null;
         cueBall.shape.onMouseUp = null;
         this.draggingCue = false;
-        this.ballAtHand = false;
+        this.ballInHand = false;
     }
 
     addCueListeners() {
         let cueBall = this.balls[15];
         this.draggingCue = false;
         cueBall.shape.onMouseDrag = () => {
-            if (this.frozen)
+            if (this.isFrozen())
                 return;
-            if (this.ballAtHand) {
+            if (this.ballInHand && this.state !== BALLS_MOVING) {
                 this.draggingCue = true;
                 this.repositionCueToMousePosition();
+            } else {
+                console.log("not able to drag cue");
             }
         };
         cueBall.shape.onMouseUp = () => {
-            if (this.frozen)
+            if (this.isFrozen())
                 return;
             this.draggingCue = false;
         };
@@ -517,6 +555,8 @@ class Table {
 
     repositionStickBehindCue() {
         let cueBall = this.balls[this.balls.length - 1];
+        if (!cueBall.existent)
+            return;
         let dx = cueBall.x - mouseX;
         let dy = cueBall.y - mouseY;
         let angle = getAngle(dy, dx);
@@ -549,36 +589,39 @@ class Table {
     }
 
     disableStick() {
+        this.stick.draggable = false;
         this.trackingLine.visible = false;
         this.phantomCueBall.visible = false;
         this.stick.shape.visible = false;
     }
 
-    toggleFreeze() {
-        this.frozen = !this.frozen;
+    isFrozen() {
+        return this.freezeRequests > 0;
     }
 
     freeze() {
-        this.frozen = true;
+        this.freezeRequests++;
     }
 
     unfreeze() {
-        this.frozen = false;
+        if (this.freezeRequests > 0)
+            this.freezeRequests--;
     }
 
     enableStick() {
+        this.stick.draggable = true;
         this.stick.shape.visible = true;
         this.trackingLine.visible = true;
         this.stick.shape.bringToFront();
     }
 
     applyState() {
+        console.log(`Applying ${stateStrings[this.state]}`);
         switch (this.state) {
             case AWAITING_SHOT:
                 this.togglePlayer();
                 this.enableStick();
-                console.log("repositioning stick");
-                this.repositionStickBehindCue()
+                this.repositionStickBehindCue();
                 break;
             case BALLS_MOVING:
                 this.disableStick();
@@ -669,6 +712,7 @@ class Table {
         let balls = [];
         let dx = 3 ** 0.5;
         let d = this.ballRadius + eps;
+        //TODO SOOOOOON
         let ballsOrder = [4, 12, 14, 5, 11, 10, 6, 13, 3, 9, 7, 2, 8, 1, 0];
         //let colors = ['pink', 'blueviolet', '#ccac00', '#0000cc', '#cc0000', '#3c0068', '#cc3700', '#1b6f1b', '#660000', '#000000'];
         let footSpot = this.footSpot;
@@ -779,8 +823,8 @@ class Table {
         }
     }
 
-    setBallAtHand(p) {
-        this.ballAtHand = true;
+    setBallInHand(val = true) {
+        this.ballInHand = val;
     }
 
     announce(msg, timeout) {
@@ -874,7 +918,6 @@ class Table {
 
             if (detectedEvents.fouls.has(POCKET_8)) {
                 if (this.currPlayer.scoredBalls.length < 8) {
-                    //console.log(detectedEvents.fouls);
                     this.declareLoss(this.currPlayerIdx);
                 } else {
                     this.declareWin(this.currPlayerIdx);
@@ -883,9 +926,8 @@ class Table {
             }
             if (detectedEvents.fouls.size > 0) {
                 this.declareFouls(detectedEvents.fouls);
-                this.setBallAtHand(-this.currPlayerIdx + 1);
+                this.setBallInHand();
             } else if (scoredBalls !== 0) {
-                console.log("NOT CHANGING PLAYER");
                 this.currPlayerIdx = -this.currPlayerIdx + 1;
             }
             this.events.clear();
@@ -925,18 +967,17 @@ function main() {
     appState = 'pause';
     table = new Table(x, y, tableWidth);
     window.table = table;
-    table.freeze();
+    // table.freeze();
     fpsMeter.start();
 }
 
-let n = 0;
-
 function onFrame() {
+    frame = (frame + 1) % 60;
     fpsMeter.update();
     if (appState !== 'play') {
         return;
     }
-    if (table.frozen) {
+    if (table.isFrozen()) {
         return;
     }
     table.update();
@@ -945,11 +986,12 @@ function onFrame() {
         while (it.hasNext()) {
             let animation = it.next();
             if (animation.progress()) {
+                animation.onFinish();
                 it.remove();
             }
         }
     }
 }
 
-window.main = main;
+globals.main = main;
 

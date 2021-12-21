@@ -30,34 +30,29 @@ class ShapeMaker {
 
     static createStripesBall(R, x, y, number) {
         let fillColor = ballsColorMeta[number];
-        let d = R / 10;
-        let r = R / 2;
-        let dy = r + d;
-        let dx = (R * R - dy * dy) ** 0.5;
+        let R2 = R * 1.01;
+        let d = R2 / 10;
+        let r = R2 / 2;
+        let circle = new Path.Circle(new Point(x, y), R2);
+        circle.fillColor = fillColor;
+        let rectTop = new Path.Rectangle(x - R2, y - 2 * R2, 2 * R2, r - d + R2);
+        let rectBot = new Path.Rectangle(x - R2, y + r + d, 2 * R2, r - d + R2);
 
-        let x1 = new Point(x - dx, y - dy);
-        let x2 = new Point(x + dx, y - dy);
-        let x3 = new Point(x + dx, y + dy);
-        let x4 = new Point(x - dx, y + dy);
-        let through1 = new Point(x + R, y);
-        let through2 = new Point(x - R, y);
+        let stripe = circle.subtract(rectBot);
+        let temp = stripe.subtract(rectTop);
+        stripe.remove();
+        rectTop.remove();
+        rectBot.remove();
+        circle.remove();
+        stripe = temp;
 
-        let outerCircle = new Path.Circle(new Point(x, y), R + R / 250);
-        outerCircle.fillColor = 'white';
-
-
-        let path = Path.Line(x1, x2);
-        path.arcTo(through1, x3);
-        path.add(x4);
-        path.arcTo(through2, x1);
-        path.strokeColor = fillColor;
-        path.fillColor = fillColor;
-
+        circle = new Path.Circle(new Point(x, y), R);
+        circle.fillColor = 'white';
 
         let innerCircle = new Path.Circle(new Point(x, y), r);
         innerCircle.fillColor = 'white';
 
-        let txt = new PointText(outerCircle.position);
+        let txt = new PointText(circle.position);
         txt.style = {
             fontFamily: 'Arial',
             fontWeight: 'bold',
@@ -68,9 +63,8 @@ class ShapeMaker {
         };
         txt.content = number.toString();
         txt.position.y += txt.bounds.height / 4;
-
         let group = new Group();
-        group.addChildren([outerCircle, path, innerCircle, txt]);
+        group.addChildren([circle, stripe, innerCircle, txt]);
         return group;
     }
 
@@ -83,8 +77,6 @@ class ShapeMaker {
         let r3 = (3 ** 0.5);
         let cos15 = Math.cos(Math.PI / 12);
         let sin15 = Math.sin(Math.PI / 12);
-        //path.add(p0);
-        //path.arcTo(p0 + i * R * r2 / 2 + j * R * (1 - r2 / 2), p0 + i * R + j * R);
         path.add(p0 + i * R + j * R);
         path.arcTo(p0 + i * R * cos15 + j * R * (1 + sin15), p0 + i * R * r3 / 2 + j * R * 1.5);
         path.arcTo(p0 + i * R * (r3 - cos15) + j * R * (2 - sin15), p0 + i * R * (r3 - 1) + j * R * 2);
@@ -98,9 +90,9 @@ class ShapeMaker {
         cap.strokeColor = 'white';
         cap.fillColor = 'blue';
 
-        let bot = cap.clone();
-        bot.rotate(180);
-        bot.position.y += 15 * R;
+        let bottom = cap.clone();
+        bottom.rotate(180);
+        bottom.position.y += 15 * R;
 
         let right = new Path();
         right.fillColor = 'blue';
@@ -114,7 +106,7 @@ class ShapeMaker {
             right.join(c);
         }
         path.remove();
-        right.join(bot);
+        right.join(bottom);
         for (let k = 0; k < 7; k++) {
             let d = path.clone();
             d.rotate(180);
@@ -402,35 +394,34 @@ class ShapeMaker {
 let r = 20;
 let x = 20;
 let y = 20;
-let a = document.createElement("a");
+let dl = document.createElement("a");
 let dt = 500;
 let t = 0;
 
-function qDownload(href, name) {
+function queueDownload(href, name) {
     setTimeout(() => download(href, name), t + dt);
     t += dt;
 }
-
 function download(href, name) {
-    a.href = href;
-    a.download = name;
-    a.click();
+    dl.href = href;
+    dl.download = name;
+    dl.click();
 }
 
 function downloadBalls() {
     let ball = ShapeMaker.createCueBall(r, x, y);
     let raster = ball.rasterize(300);
-    qDownload(raster.toDataURL(), "cue.png");
+    queueDownload(raster.toDataURL(), "cue.png");
     for (let i = 1; i < 9; i++) {
         let ball = ShapeMaker.createSolidBall(r, x, y, i);
         let raster = ball.rasterize(300);
-        qDownload(raster.toDataURL(), `solid${i}.png`);
+        queueDownload(raster.toDataURL(), `solid${i}.png`);
     }
     for (let i = 9; i < 16; i++) {
         let ball = ShapeMaker.createStripesBall(r, x, y, i);
         let raster = ball.rasterize(300);
         console.log(i);
-        qDownload(raster.toDataURL(), `stripes${i}.png`);
+        queueDownload(raster.toDataURL(), `stripes${i}.png`);
     }
 }
 
@@ -489,15 +480,11 @@ class ImageLoader {
     }
 }
 
-//let w=800;
-//download(ShapeMaker.createTable(0.05 * w, 0.05 * w, w).rasterize(300).toDataURL(), "table.png");
-//download(ShapeMaker.createStick(0, w * 1.5 / 100, w / 100).rasterize(300).toDataURL(), "stick.png");
-//ShapeMaker.createBallsContainer(r, r*1.13, r*1.13+2, 2);
-//download(ShapeMaker.createBallsContainer(r * 1.13, 0, 0).rasterize(300).toDataURL(), "ballContainer.png");
-let bc = new BallContainer(20, 100, 100);
-bc.insertBall(1);
-bc.insertBall(1);
-bc.insertBall(1);
-bc.insertBall(1);
-bc.insertBall(1);
-bc.insertBall(1);
+let w = 800;
+
+
+// console.log(that);
+paper.project.importSVG("res/test.svg");
+// paper.project.importSVG("res/Ethereum_logo_2014.svg");
+// let thepath = new paper.Path("M86.41 449.42a22.39 22.39 0 0128.69-6.59c17.8 9.54 46.13 23.67 67.23 29.67 25.8 7.29 73.27 24.36 93.21 31.62a7.39 7.39 0 009.91-6.44c1-15 2.86-43.37 2.84-57.65 0-32.85 0-21.6 3.38-55.66 1.67-16.72 9.39-45.22 57.75-74.63 21.6-13.13 39.48-8 52.67 1.68-13.31-14.77-35.33-29.15-63.78-11.85-48.35 29.4-56.08 57.91-57.75 74.63-3.4 34.06-3.43 22.81-3.38 55.66 0 20-3.54 67.47-3.54 67.47s-69.19-25.61-102.42-35S86.9 423.2 86.9 423.2l-4.69 22.67s-3-2.33 4.15 3.54z");
+// thepath.fillColor = "red";

@@ -13,19 +13,21 @@ class PhysicsHandler {
     }
 
     injectMS(i, msVector) {
-        console.log("###################\nIN INJECT MS");
-        if (!this.balls[i].msVector === null && this.balls[i].msVector.length > 0) {
-            console.log("RETURN");
+        console.log(`IN injectMS`);
+        if (this.balls[i].msVector !== null && this.balls[i].msVector.length > 0) {
+            console.log(`\tStat: msVector=${this.balls[i].msVector}, len=${this.balls[i].msVector.length}, shape=${this.balls[i].shape}`);
+            console.log("\tRETURN");
             return;
         }
         let ball = this.balls[i];
         ball.msVector = msVector;
-        console.log(`injected ${msVector.length} ms to ball with shape ${ball.shape}, number ${ball.number}`);
+        console.log(`\tinjected ${msVector.length} ms to ball with shape ${ball.shape}, number ${ball.number}`);
 
         if (!this.movingBallsIds[ball.number]) {
             this.movingBalls.add(i);
-            this.movingBalls[ball.number] = true;
+            this.movingBallsIds[ball.number] = true;
         }
+        console.log(`OUT injectMS`);
     }
 
     updateBallPosition(ball) {
@@ -37,7 +39,8 @@ class PhysicsHandler {
         let max_y = ball.boundary.y + ball.boundary.height;
         let eps = 0.01;
         let r = ball.radius;
-
+        let dx = ball.msVector.x;
+        let dy = ball.msVector.y;
         let collidedWithRail = true;
         if (ball.shape.position.x + ball.msVector.x + r > max_x) {
             ball.msVector.x = -ball.msVector.x;
@@ -53,8 +56,15 @@ class PhysicsHandler {
             ball.y = min_y + eps + r;
         } else
             collidedWithRail = false;
-        if (collidedWithRail)
+        if (collidedWithRail) {
+            dx -= ball.msVector.x;
+            dy -= ball.msVector.y;
+            let volume = ((dx * dx + dy * dy) ** 0.5) / 40;
+            let audio = ballHitRailAudio.cloneNode();
+            audio.volume = volume > 1 ? 1: volume;
+            audio.play();
             this.table.events.add([ball.number, 'collide', 'rail']);
+        }
 
         ball.shape.position.x += ball.msVector.x * GLOBAL_TIME_MULTIPLIER;
         ball.shape.position.y += ball.msVector.y * GLOBAL_TIME_MULTIPLIER;
@@ -92,7 +102,7 @@ class PhysicsHandler {
                 let c = i % 3 === 1 ? this.table.pocketRadius : this.table.pocketRadius * 1.25;
                 if (a * a + b * b <= c * c) {
                     it.remove();
-                    this.movingBalls[ball.number] = false;
+                    this.movingBallsIds[ball.number] = false;
                     this.table.removeBall(idx, hole);
                     break;
                 }
@@ -115,7 +125,7 @@ class PhysicsHandler {
             if (b1.msVector.length > this.maxBallMS) {
                 this.maxBallMS = b1.msVector.length;
             }
-            if (b1.msVector.length === 0) {
+            if (b1.msVector.length === 0 || !b1.existent) {
                 it.remove();
                 this.movingBallsIds[b1.number] = false;
                 continue;
@@ -126,12 +136,23 @@ class PhysicsHandler {
                     continue;
                 if (b1 !== b2) {
                     if (b1.collides(b2)) {
-                        this.table.events.add([b1.number, 'collide', b2.number])
+                        this.table.events.add([b1.number, 'collide', b2.number]);
+
                         let mss = PhysicsHandler.getBallsMSAfterCollision(b1, b2);
+                        let dx = b1.msVector.x, dy = b1.msVector.y;
                         b1.msVector.x = mss[0];
                         b1.msVector.y = mss[1];
                         b2.msVector.x = mss[2];
                         b2.msVector.y = mss[3];
+                        if(ballHitAudiosPlaying < 6) {
+                            ballHitAudiosPlaying++;
+                            let volume = ((dx - mss[0]) ** 2 + (dy - mss[1]) ** 2) ** 0.5;
+                            volume /= 40;
+                            let audio = ballHitAudio.cloneNode();
+                            audio.volume = volume;
+                            audio.play();
+                            audio.onended = ()=>--ballHitAudiosPlaying;
+                        }
                         PhysicsHandler.resolveCollision(b1, b2);
                         if (b2.msVector.length < 0.01) {
                             b2.msVector.length = 0;
@@ -162,21 +183,27 @@ class PhysicsHandler {
 
     updateBallsPosition() {
         // dynamic global time multiplier
+        if (this.isStatic()) {
+            if (DYNAMIC_GTM)
+                GLOBAL_TIME_MULTIPLIER = PREF_GLOBAL_TIME_MULTIPLIER;
+            return;
+        }
         if (DYNAMIC_GTM) {
             if (this.maxBallMS > MAX_MOVEMENT_PER_FRAME) {
                 GLOBAL_TIME_MULTIPLIER = MAX_MOVEMENT_PER_FRAME / this.maxBallMS;
             } else if (this.maxBallMS < MIN_MOVEMENT_PER_FRAME) {
-                let val = this.maxBallMS < 0.2 ? 0.2 : this.maxBallMS;
+                let val = this.maxBallMS < 0.3 ? 0.3 : this.maxBallMS;
                 GLOBAL_TIME_MULTIPLIER = MIN_MOVEMENT_PER_FRAME / val;
             }
-        } else{
-            GLOBAL_TIME_MULTIPLIER = DEFAULT_GLOBAL_TIME_MULTIPLIER;
+        } else {
+            GLOBAL_TIME_MULTIPLIER = PREF_GLOBAL_TIME_MULTIPLIER;
         }
         document.getElementById('GTM').innerText = GLOBAL_TIME_MULTIPLIER.toFixed(3);
 
         let it = this.movingBalls.iterator();
         while (it.hasNext()) {
-            this.updateBallPosition(this.balls[it.next()]);
+            let ballIndex = it.next();
+            this.updateBallPosition(this.balls[ballIndex]);
         }
     }
 
