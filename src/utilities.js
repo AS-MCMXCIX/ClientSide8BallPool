@@ -369,19 +369,29 @@ class LinkedList {
 }
 
 class PaperAnimation {
+    /**
+     * @param {string} type - animation type
+     * @param {number} duration - animation duration
+     * @param {paper.Item} node - node to apply animation on
+     */
     constructor(type, duration, node) {
         this.type = type;
         this.node = node;
         this._curr = 0;
         this.duration = duration;
     }
-
+    /** @function
+     * @name progress - progress the animation on each frame
+     * @returns {boolean} - returns true if animation is finished
+     */
     progress() {
+        return true;
     }
 
-    onFinish() {
-    }
-
+    /** @function
+     * @name onFinish - do something after animation finishes
+     */
+    onFinish() {}
     extend(args) {
         let res = Object.create(this);
         for (let field in args) {

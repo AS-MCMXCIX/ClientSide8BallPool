@@ -166,8 +166,8 @@ class Stick {
     constructor(x, y, width) {
         this.x = x;
         this.y = y;
-        this.rotation = 0;
-        let shape = new Raster('res/Table/stick.png');
+        let shape = new Raster();
+        shape.image = images.stickImage;
         shape.scale(width / shape.bounds.width);
         this.width = shape.bounds.width;
         this.height = shape.bounds.height;
@@ -178,8 +178,7 @@ class Stick {
     }
 
     setRotation(angle) {
-        this.shape.rotate(angle - this.rotation);
-        this.rotation = angle;
+        this.shape.rotate(angle - this.shape.rotation);
     }
 }
 
@@ -203,8 +202,7 @@ class Table {
                 //new Path.Circle(this.holes[j], 10).fillColor = 'red';
             }
         }
-        let img = new window.Image();
-        img.src = 'res/Table/table.png';
+        let img = images.tableImage;
         let shape = new Raster();
         shape.image = img;
         shape.scale(this.totalWidth / shape.bounds.width);
@@ -444,7 +442,6 @@ class Table {
 
     pause() {
         appState = 'pause';
-        console.log(`AppState= ${appState}`);
         this.disableStick();
         this.freeze();
     }
@@ -489,7 +486,6 @@ class Table {
     reset() {
         if (this.currMatch === "8ballpool") {
             appState = 'resetting_match';
-
             let l = this.eventListeners.length - 1;
             for (let i = 0; i < l; i++) {
                 document.getElementById('container').removeEventListener(this.eventListeners[i][0], this.eventListeners[i][1]);
@@ -605,7 +601,6 @@ class Table {
     }
 
     applyState() {
-        console.log(`Applying ${stateStrings[this.state]}`);
         switch (this.state) {
             case AWAITING_SHOT:
                 this.togglePlayer();

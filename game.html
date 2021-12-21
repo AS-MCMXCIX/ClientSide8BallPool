@@ -9,10 +9,15 @@
     <script src="src/utilities.js" type="text/javascript"></script>
     <script src="src/player.js" type="text/javascript"></script>
     <script>
-
+        let images = {
+            tableImage: new window.Image(),
+            stickImage: new window.Image()
+        };
+        images.tableImage.src = 'res/Table/table.png';
+        images.stickImage.src = 'res/Table/stick.png';
         let frame = 0;
         let cliHandler = null;
-        window.globals = {main: null};
+        window.globals = {main: null, images: images};
         let ballHitRailAudio = new Audio('res/sounds/ball-hit.wav');
         let ballHitAudio = new Audio('res/sounds/ball-hit-rail.mp3');
         let ballHitAudiosPlaying = 0;
@@ -263,9 +268,10 @@
         return true;
     }
 
-
-    setTimeout(() => {
+    setTimeout((function () {
         globals.main();
+        table.init8BallPoolMatch(0);
+        table.reset();
         let debuggerInputElement = document.getElementById('debugger-input');
         let debuggerLogElement = document.getElementById('debugger-log');
         let debuggerElement = document.getElementById('debugger-cli');
@@ -286,8 +292,10 @@
                     break;
             }
         });
-    }, 1000);
-    setTimeout(function () {
+        setTimeout(initThese, 1000);
+    }), 4000);
+
+    function initThese() {
         let vars = getUrlVars();
         if (!validateVars(vars)) {
             //TODO
@@ -309,7 +317,7 @@
         document.getElementById('container').style.visibility = 'visible';
         document.getElementById('loading-layer').style.visibility = 'hidden';
         document.getElementById('reset-button').click();
-    }, 2000);
+    }
 
 
     window.onbeforeunload = function () {
