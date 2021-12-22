@@ -95,15 +95,15 @@ class PhysicsHandler {
             let idx = it.next();
             let ball = this.balls[idx];
             for (let i = 0; i < this.table.pockets.length; i++) {
-                let hole = this.table.pockets[i];
-                let a = (ball.x - hole.x);
-                let b = (ball.y - hole.y);
+                let pocket = this.table.pockets[i];
+                let a = (ball.x - pocket.x);
+                let b = (ball.y - pocket.y);
                 // TODO: handle corner holes better than this
                 let c = i % 3 === 1 ? this.table.pocketRadius : this.table.pocketRadius * 1.25;
                 if (a * a + b * b <= c * c) {
                     it.remove();
                     this.movingBallsIds[ball.number] = false;
-                    this.table.removeBall(idx, hole);
+                    this.table.removeBall(idx, i);
                     break;
                 }
             }

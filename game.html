@@ -12,7 +12,7 @@
         let images = {
             tableImage: new window.Image(),
             stickImage: new window.Image(),
-            ballContainerImage:new window.Image()
+            ballContainerImage: new window.Image()
         };
         images.tableImage.src = 'res/Table/table.png';
         images.stickImage.src = 'res/Table/stick.png';
@@ -152,7 +152,7 @@
      id="container">
     <button id="reset-button" class="btn btn-primary btn-lg position-absolute"
             style="font-size: 3rem;right: 19vh;height: 13vh;width: 13vh"
-            onclick="event.stopPropagation();if(table.isFrozen()) return;document.getElementById('reset-button').blur();
+            onclick="event.stopPropagation();if(table.frozen) return;document.getElementById('reset-button').blur();
             table.reset();table.init8BallPoolMatch(Math.random() < 0.5? 0:1);table.play();
             if(document.getElementById('game-help').style.visibility === 'visible')
                 switchVisibility(document.getElementById('game-help'));">
@@ -223,10 +223,11 @@
         </div>
     </div>
     <div class="container d-flex position-absolute justify-content-center" id="game-help"
-         style="visibility:hidden;background-color:rgba(255,0,0,0.95); height: 75vh;width: 66vw;left: 20%;top: 19vh">
-        <div class="row align-self-center justify-content-center h-75" style="width: 90%;background-color: #7abaff">
+         style="visibility:hidden;background-color:rgba(255,0,0,0.9); height: 75vh;width: 66vw;left: 17vw;top: 19vh">
+        <div class="row align-self-center justify-content-center h-75"
+             style="width: 90%;background-color: rgba(122,186,255, 0.9)">
             <span class="text-primary align-self-center text-center noselect" id="game-help-text"
-                  style="font-family: Arial;font-size: xx-large">
+                  style="font-family: Arial;font-size: xx-large;">
                 Press Space To Charge Up Stick.<br><br>
                 Drag Mouse To Change Stick Direction.<br><br>
                 Drag Mouse To Change Cue Position When Ball Is In Hand.<br><br>

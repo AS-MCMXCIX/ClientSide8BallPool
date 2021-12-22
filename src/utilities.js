@@ -380,6 +380,7 @@ class PaperAnimation {
         this._curr = 0;
         this.duration = duration;
     }
+
     /** @function
      * @name progress - progress the animation on each frame
      * @returns {boolean} - returns true if animation is finished
@@ -391,7 +392,9 @@ class PaperAnimation {
     /** @function
      * @name onFinish - do something after animation finishes
      */
-    onFinish() {}
+    onFinish() {
+    }
+
     extend(args) {
         let res = Object.create(this);
         for (let field in args) {

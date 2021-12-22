@@ -189,8 +189,6 @@ class Stick {
         shape.scale(width / shape.bounds.width);
         this.width = shape.bounds.width;
         this.height = shape.bounds.height;
-        shape.position.x += this.width / 2 + x;
-        shape.position.y += this.height / 2 + y;
         this.shape = shape;
         this.draggable = true;
     }
@@ -220,6 +218,7 @@ class Table {
                 //new Path.Circle(this.holes[j], 10).fillColor = 'red';
             }
         }
+
         let img = images.tableImage;
         let shape = new Raster();
         shape.image = img;
@@ -235,11 +234,11 @@ class Table {
             new BallContainer(this.ballRadius, x - 2 * this.outerWidth, y),
             new BallContainer(this.ballRadius, x + this.totalWidth, y)
         ];
-        this.reInitStateVars();
+        this.resetStateVars();
         init = true;
     }
 
-    reInitStateVars() {
+    resetStateVars() {
         this.balls = [];
         this.ballsEnteringPocket = 0;
         this.currMatch = null;
@@ -276,9 +275,9 @@ class Table {
         this.players = [p1, p2];
     }
 
-    removeBall(idx, pocket) {
+    removeBall(idx, pocketIndex) {
         this.balls[idx].existent = false;
-        return this.pocketBall(idx, pocket);
+        return this.pocketBall(idx, pocketIndex);
     }
 
     fadeout(g) {
@@ -291,25 +290,27 @@ class Table {
         });
     }
 
-    pocketBall(idx, pocket = 0) {
-        if (this.balls.length <= idx || idx < 0)
+    pocketBall(ballIndex, pocketIndex = 0) {
+        if (this.balls.length <= ballIndex || ballIndex < 0)
             return false;
-        let ball = this.balls[idx];
-        console.log("IN pocketBall");
-        console.log(`\tpocketing ball #${ball.number}`);
-        let l = Math.min(60, Math.max(Math.round((ball.shape.position - pocket).length * 3 / ball.msVector.length), 20));
+        let ball = this.balls[ballIndex];
+        let pocketPosition = this.pockets[pocketIndex];
+        let l = Math.min(60, Math.max(Math.round((ball.shape.position - pocketPosition).length * 3 / ball.msVector.length), 20));
         ++this.ballsEnteringPocket;
         if (ball.number === 0)
             this.removeCueListeners();
-        let sup = this;
+        let outer = this;
         ball.msVector = 0;
         this.events.add(['pocket', ball.number]);
+
+        // this animation translates and scales the ball to mimic ball entering pocket
         let animation = new PaperAnimation('transcale', l, ball.shape);
         animation.progress = function () {
             let c = (this.duration - this._curr) / this.duration;
-            this.node.position = this.node.position + (pocket - this.node.position) * (1 - c);
+            this.node.position += (pocketPosition - this.node.position) * (1 - c);
             this.node.scale(c);
             ++this._curr;
+            // if (animation is finished)
             if (this._curr > this.duration) {
                 this.node = null;
                 return true;
@@ -318,7 +319,7 @@ class Table {
         };
         animation.onFinish = function () {
             ball.shape.remove();
-            --sup.ballsEnteringPocket;
+            --outer.ballsEnteringPocket;
         };
         animationRequests.add(animation);
         return true;
@@ -378,13 +379,13 @@ class Table {
 
         this.addCueListeners();
         let downListener = () => {
-            if (this.isFrozen())
+            if (this.frozen)
                 return;
             mouseMoved = false;
             mouseDown = true;
         };
         let moveListener = e => {
-            if (this.isFrozen())
+            if (this.frozen)
                 return;
             let dx = mouseX - e.pageX;
             let dy = mouseY - e.pageY;
@@ -399,12 +400,12 @@ class Table {
             }
         };
         let upListener = () => {
-            if (this.isFrozen())
+            if (this.frozen)
                 return;
             mouseDown = false;
         };
         let e1 = e => {
-            if (this.isFrozen())
+            if (this.frozen)
                 return;
             if (e.code === 'Space' && cueBall.existent && this.stick.draggable && this.physicsHandler.isStatic()) {
                 if (!this.stickPowerIndicator.toggleState()) {
@@ -439,7 +440,7 @@ class Table {
             }
         };
 
-        //track mouse position as it is (impossible????) to get it without an event
+        //track mouse position as it is not possible to get it without an event
         this.eventListeners = [];
         this.eventListeners.push(['mousedown', downListener]);
         this.eventListeners.push(['mousemove', moveListener]);
@@ -476,7 +477,7 @@ class Table {
         let cueBall = this.balls[15];
         this.draggingCue = false;
         cueBall.shape.onMouseDrag = () => {
-            if (this.isFrozen())
+            if (this.frozen)
                 return;
             if (this.ballInHand && this.state !== BALLS_MOVING) {
                 this.draggingCue = true;
@@ -486,7 +487,7 @@ class Table {
             }
         };
         cueBall.shape.onMouseUp = () => {
-            if (this.isFrozen())
+            if (this.frozen)
                 return;
             this.draggingCue = false;
         };
@@ -522,7 +523,7 @@ class Table {
             appState = 'pause';
             animationRequests.clear();
             this.players.forEach(p => p.reset());
-            this.reInitStateVars();
+            this.resetStateVars();
         }
     }
 
@@ -598,7 +599,7 @@ class Table {
         this.stick.shape.visible = false;
     }
 
-    isFrozen() {
+    get frozen() {
         return this.freezeRequests > 0;
     }
 
@@ -979,7 +980,7 @@ function onFrame() {
     if (appState !== 'play') {
         return;
     }
-    if (table.isFrozen()) {
+    if (table.frozen) {
         return;
     }
     table.update();
