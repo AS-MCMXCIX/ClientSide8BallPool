@@ -467,18 +467,18 @@ class BallContainer {
     }
 }
 
-class ImageLoader {
-    static loadBall(number) {
-        if (number === 0) {
-            return new Raster('res/balls/cue.png');
-        } else if (number <= 8) {
-            return new Raster(`res/balls/solid${number}.png`);
-        } else if (number > 8 && number < 16) {
-            return new Raster(`res/balls/stripes${number}.png`);
-        }
-        throw "wrong number";
-    }
-}
+// class ImageLoader {
+//     static loadBall(number) {
+//         if (number === 0) {
+//             return new Raster('res/balls/cue.png');
+//         } else if (number <= 8) {
+//             return new Raster(`res/balls/solid${number}.png`);
+//         } else if (number > 8 && number < 16) {
+//             return new Raster(`res/balls/stripes${number}.png`);
+//         }
+//         throw "wrong number";
+//     }
+// }
 
 let w = 800;
 

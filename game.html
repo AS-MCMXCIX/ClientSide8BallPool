@@ -11,10 +11,12 @@
     <script>
         let images = {
             tableImage: new window.Image(),
-            stickImage: new window.Image()
+            stickImage: new window.Image(),
+            ballContainerImage:new window.Image()
         };
         images.tableImage.src = 'res/Table/table.png';
         images.stickImage.src = 'res/Table/stick.png';
+        images.ballContainerImage.src = 'res/Table/ballContainer.png';
         let frame = 0;
         let cliHandler = null;
         window.globals = {main: null, images: images};

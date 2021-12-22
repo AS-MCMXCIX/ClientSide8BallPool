@@ -42,7 +42,8 @@ class BallContainer {
         this.r = r;
         this.x = x;
         this.y = y;
-        let shape = new Raster('res/Table/ballContainer.png');
+        let shape = new Raster();
+        shape.image = images.ballContainerImage;
         shape.scale(this.r * 2.26 / shape.bounds.width);
         shape.position += new Point(x, shape.bounds.height / 2 + r + y);
         this.ballsIn = 0;
@@ -53,7 +54,7 @@ class BallContainer {
 
     insertBall(num) {
         let shape = ImageLoader.loadBall(num);
-        shape.scale(2 * this.r / shape.bounds.width)
+        shape.scale(2 * this.r / shape.bounds.width);
         shape.position.x = this.x;
         let dh = (8 - this.ballsIn) * 0.125 * this.shape.bounds.height;
         shape.position.y = this.y + dh - 2;
@@ -77,18 +78,35 @@ class BallContainer {
 }
 
 
-class ImageLoader {
-    static loadBall(number) {
-        if (number === 0) {
-            return new Raster('res/balls/cue.png');
-        } else if (number <= 8) {
-            return new Raster(`res/balls/solid${number}.png`);
-        } else if (number > 8 && number < 16) {
-            return new Raster(`res/balls/stripes${number}.png`);
-        }
-        throw "wrong number";
+let ImageLoader = new function () {
+    function ImageLoader() {
+        return this;
     }
-}
+
+    let img = new window.Image();
+    img.src = 'res/balls/cue.png';
+    let ballsImages = new Map([
+        [0, img]
+    ]);
+    for (let i = 1; i <= 8; ++i) {
+        img = new window.Image();
+        img.src = `res/balls/solid${i}.png`;
+        ballsImages.set(i, img);
+    }
+    for (let i = 9; i <= 15; ++i) {
+        img = new window.Image();
+        img.src = `res/balls/stripes${i}.png`;
+        ballsImages.set(i, img);
+    }
+    ImageLoader.loadBall = function (number) {
+        if (number < 0 || number > 15)
+            throw "wrong number";
+        let res = new Raster();
+        res.image = ballsImages.get(number);
+        return res;
+    };
+    return ImageLoader;
+};
 
 class StickPowerIndicator {
     constructor(x, y, w, h) {
